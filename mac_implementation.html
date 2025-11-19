@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAC Implementation | Tag Gen | Verify | Attack</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            display: grid;
+            grid-template-rows: auto auto;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            height: 100vh;
+        }
+        .section {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ccc;
+            position: relative;
+        }
+        .section-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .section-title:before {
+            margin-right: 5px;
+            font-size: 18px;
+        }
+        .tag-gen .section-title:before {
+            content: "🔒";
+        }
+        .tag-verify .section-title:before {
+            content: "✅";
+        }
+        .forgery .section-title:before {
+            content: "☠️";
+        }
+        label {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 14px;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            background-color: #e9e9e9;
+            border: 1px solid #aaa;
+            border-radius: 3px;
+            padding: 4px 8px;
+            margin: 3px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #d9d9d9;
+        }
+        .result-text {
+            font-size: 14px;
+            color: blue;
+            text-align: center;
+            margin-top: 8px;
+        }
+        .result-text.success {
+            color: green;
+        }
+        .result-text.error {
+            color: red;
+        }
+        .forgery {
+            grid-column: 1 / span 2;
+        }
+        .footer {
+            grid-column: 1 / span 2;
+            text-align: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-top: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Tag Generation Section -->
+        <div class="section tag-gen">
+            <div class="section-title">Tag Generation</div>
+            
+            <label for="key">Key:</label>
+            <input type="text" id="key" placeholder="Enter key or generate random">
+            <button id="copyKeyBtn">Copy Key</button>
+            
+            <label for="message">Message:</label>
+            <input type="text" id="message" placeholder="Enter message or generate random">
+            <button id="copyMessageBtn">Copy Message</button>
+            
+            <button id="generateTagBtn">Generate Tag</button>
+            
+            <label for="generatedTag">Generated Tag:</label>
+            <input type="text" id="generatedTag" readonly>
+            <button id="copyTagBtn">Copy Tag</button>
+            
+            <div id="tagGenResult" class="result-text">Tag Generated Successfully</div>
+        </div>
+        
+        <!-- Tag Verification Section -->
+        <div class="section tag-verify">
+            <div class="section-title">Tag Verification</div>
+            
+            <label for="verifyKey">Key:</label>
+            <input type="text" id="verifyKey" placeholder="Enter key for verification">
+            <button id="copyVerifyKeyBtn">Copy Key</button>
+            
+            <label for="verifyMessage">Message:</label>
+            <input type="text" id="verifyMessage" placeholder="Enter message to verify">
+            <button id="copyVerifyMessageBtn">Copy Message</button>
+            
+            <label for="verifyTag">Tag:</label>
+            <input type="text" id="verifyTag" placeholder="Enter tag to verify">
+            <button id="copyVerifyTagBtn">Copy Tag</button>
+            
+            <button id="verifyTagBtn">Verify Tag</button>
+            
+            <div id="verifyResult" class="result-text">Ready to verify tag</div>
+        </div>
+        
+        <!-- Forgery Attempt Section -->
+        <div class="section forgery">
+            <div class="section-title">Forgery Attempt</div>
+            
+            <label for="forgedMessage">Forged Message:</label>
+            <input type="text" id="forgedMessage" placeholder="Enter forged message">
+            <button id="copyForgedMessageBtn">Copy Forged Message</button>
+            
+            <label for="forgedTag">Forged Tag:</label>
+            <input type="text" id="forgedTag" placeholder="Enter forged tag">
+            <button id="copyForgedTagBtn">Copy Forged Tag</button>
+            
+            <button id="runForgeryBtn">Run Forgery Attack</button>
+            
+            <div id="forgeryResult" class="result-text">Ready to attempt forgery</div>
+            
+            <!-- Attack Visualization Section -->
+            <div id="attackVisualization" style="display: none; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">
+                <h3>Attack Process Visualization</h3>
+                
+                <!-- Oracle Queries Section -->
+                <div style="margin-bottom: 15px;">
+                    <h4>Step 1: Oracle Queries</h4>
+                    <div id="oracleQueries" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; font-family: monospace; font-size: 12px; background-color: #f7f7f7;">
+                        Oracle queries will appear here...
+                    </div>
+                </div>
+                
+                <!-- Message Combination Section -->
+                <div style="margin-bottom: 15px;">
+                    <h4>Step 2: Message & Tag Combination</h4>
+                    <div id="messageCombination" style="display: flex; flex-direction: column; gap: 5px;">
+                        <div style="display: flex; gap: 10px;">
+                            <div style="flex: 1; padding: 5px; border: 1px solid #ddd; background-color: #f0f8ff;">
+                                <strong>Message 1:</strong> <span id="message1"></span>
+                                <div><strong>Tag 1:</strong> <span id="tag1"></span></div>
+                            </div>
+                            <div style="flex: 1; padding: 5px; border: 1px solid #ddd; background-color: #fff0f5;">
+                                <strong>Message 2:</strong> <span id="message2"></span>
+                                <div><strong>Tag 2:</strong> <span id="tag2"></span></div>
+                            </div>
+                        </div>
+                        <div style="display: flex; margin-top: 10px; align-items: center;">
+                            <div style="flex: 1; text-align: center; padding: 10px; background-color: #f0f8ff; border: 1px solid #add8e6;">
+                                <strong id="m0a"></strong>
+                            </div>
+                            <div style="margin: 0 10px;">+</div>
+                            <div style="flex: 1; text-align: center; padding: 10px; background-color: #fff0f5; border: 1px solid #ffb6c1;">
+                                <strong id="m1b"></strong>
+                            </div>
+                            <div style="margin: 0 10px;">=</div>
+                            <div style="flex: 1; text-align: center; padding: 10px; background-color: #f0fff0; border: 1px solid #90ee90;">
+                                <strong id="forgedMessageDisplay"></strong>
+                            </div>
+                        </div>
+                        <div style="display: flex; margin-top: 10px; align-items: center;">
+                            <div style="flex: 1; text-align: center; padding: 10px; background-color: #f0f8ff; border: 1px solid #add8e6;">
+                                <strong id="t0a"></strong>
+                            </div>
+                            <div style="margin: 0 10px;">+</div>
+                            <div style="flex: 1; text-align: center; padding: 10px; background-color: #fff0f5; border: 1px solid #ffb6c1;">
+                                <strong id="t1b"></strong>
+                            </div>
+                            <div style="margin: 0 10px;">=</div>
+                            <div style="flex: 1; text-align: center; padding: 10px; background-color: #f0fff0; border: 1px solid #90ee90;">
+                                <strong id="forgedTagDisplay"></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Explanation Section -->
+                <div style="margin-top: 15px; padding: 10px; background-color: #fffaf0; border: 1px solid #ffe4b5;">
+                    <h4>Attack Explanation</h4>
+                    <p id="attackExplanation">
+                        The MAC scheme splits each message in half and creates separate tags for each half.
+                        This vulnerability allows an attacker to combine the first half of one message with 
+                        the second half of another, and the corresponding tag halves will still verify correctly.
+                    </p>
+                    <div id="verificationResult" style="margin-top: 10px; font-weight: bold;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <button id="toggleDarkMode">Toggle Dark Mode</button>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:5000';
+        let currentSessionId = null;
+        
+        // DOM elements
+        const keyInput = document.getElementById('key');
+        const messageInput = document.getElementById('message');
+        const generatedTagInput = document.getElementById('generatedTag');
+        const tagGenResultDiv = document.getElementById('tagGenResult');
+        
+        const verifyKeyInput = document.getElementById('verifyKey');
+        const verifyMessageInput = document.getElementById('verifyMessage');
+        const verifyTagInput = document.getElementById('verifyTag');
+        const verifyResultDiv = document.getElementById('verifyResult');
+        
+        const forgedMessageInput = document.getElementById('forgedMessage');
+        const forgedTagInput = document.getElementById('forgedTag');
+        const forgeryResultDiv = document.getElementById('forgeryResult');
+        
+        // Utility functions
+        async function postToApi(endpoint, data) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                return await response.json();
+                
+            } catch (error) {
+                console.error('Error calling API:', error);
+                return { error: error.message };
+            }
+        }
+        
+        function setResultText(element, text, isSuccess = true, isError = false) {
+            element.textContent = text;
+            element.className = 'result-text';
+            if (isSuccess) element.classList.add('success');
+            if (isError) element.classList.add('error');
+        }
+        
+        function generateRandomString(length) {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            const charactersLength = characters.length;
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * charactersLength));
+            }
+            return result;
+        }
+        
+        // Event Listeners - Tag Generation
+        document.getElementById('generateTagBtn').addEventListener('click', async () => {
+            let key = keyInput.value;
+            let message = messageInput.value;
+            
+            // Generate random values if empty
+            if (!key) {
+                key = generateRandomString(16);
+                keyInput.value = key;
+            }
+            
+            if (!message) {
+                message = generateRandomString(10);
+                messageInput.value = message;
+            }
+            
+            const data = { message, key };
+            const result = await postToApi('generate-tag', data);
+            
+            if (result.error) {
+                setResultText(tagGenResultDiv, `Error: ${result.error}`, false, true);
+                return;
+            }
+            
+            keyInput.value = result.key;
+            messageInput.value = result.message;
+            generatedTagInput.value = result.tag;
+            currentSessionId = result.session_id;
+            
+            setResultText(tagGenResultDiv, 'Tag Generated Successfully');
+        });
+        
+        document.getElementById('copyKeyBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(keyInput.value);
+            setResultText(tagGenResultDiv, 'Key copied to clipboard');
+        });
+        
+        document.getElementById('copyMessageBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(messageInput.value);
+            setResultText(tagGenResultDiv, 'Message copied to clipboard');
+        });
+        
+        document.getElementById('copyTagBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(generatedTagInput.value);
+            setResultText(tagGenResultDiv, 'Tag copied to clipboard');
+        });
+        
+        // Event Listeners - Tag Verification
+        document.getElementById('verifyTagBtn').addEventListener('click', async () => {
+            const key = verifyKeyInput.value;
+            const message = verifyMessageInput.value;
+            const tag = verifyTagInput.value;
+            
+            if (!key || !message || !tag) {
+                setResultText(verifyResultDiv, 'Please fill all fields', false, true);
+                return;
+            }
+            
+            const result = await postToApi('verify-tag', { message, key, tag });
+            
+            if (result.error) {
+                setResultText(verifyResultDiv, `Error: ${result.error}`, false, true);
+                return;
+            }
+            
+            if (result.is_valid) {
+                setResultText(verifyResultDiv, 'MAC Valid: ✓ True');
+            } else {
+                setResultText(verifyResultDiv, 'MAC Valid: ✗ False', false, true);
+            }
+        });
+        
+        document.getElementById('copyVerifyKeyBtn').addEventListener('click', () => {
+            verifyKeyInput.value = keyInput.value;
+            setResultText(verifyResultDiv, 'Key copied from Tag Generation');
+        });
+        
+        document.getElementById('copyVerifyMessageBtn').addEventListener('click', () => {
+            verifyMessageInput.value = messageInput.value;
+            setResultText(verifyResultDiv, 'Message copied from Tag Generation');
+        });
+        
+        document.getElementById('copyVerifyTagBtn').addEventListener('click', () => {
+            verifyTagInput.value = generatedTagInput.value;
+            setResultText(verifyResultDiv, 'Tag copied from Tag Generation');
+        });
+        
+        // Event Listeners - Forgery Attempt
+        document.getElementById('runForgeryBtn').addEventListener('click', async () => {
+            if (!currentSessionId) {
+                setResultText(forgeryResultDiv, 'Please generate a tag first', false, true);
+                return;
+            }
+            
+            setResultText(forgeryResultDiv, 'Running forgery attack...', false, false);
+            
+            // Hide the visualization until we have new data
+            document.getElementById('attackVisualization').style.display = 'none';
+            
+            const result = await postToApi('run-forgery', { session_id: currentSessionId });
+            
+            if (result.error) {
+                setResultText(forgeryResultDiv, `Error: ${result.error}`, false, true);
+                return;
+            }
+            
+            forgedMessageInput.value = result.forged_message;
+            forgedTagInput.value = result.forged_tag;
+            
+            if (result.success) {
+                setResultText(forgeryResultDiv, 'Forgery Valid: ✓ True');
+                
+                // Also update the verification fields for easy testing
+                verifyKeyInput.value = keyInput.value;
+                verifyMessageInput.value = result.forged_message;
+                verifyTagInput.value = result.forged_tag;
+            } else {
+                setResultText(forgeryResultDiv, 'Forgery Valid: ✗ False', false, true);
+            }
+            
+            // Display the attack visualization
+            displayAttackVisualization(result);
+        });
+        
+        // Function to display the attack visualization
+        function displayAttackVisualization(result) {
+            if (!result.attack_steps) {
+                return;
+            }
+            
+            // Show the visualization section
+            document.getElementById('attackVisualization').style.display = 'block';
+            
+            // Display oracle queries
+            const oracleQueriesDiv = document.getElementById('oracleQueries');
+            let queriesHtml = '';
+            
+            result.attack_steps.oracle_queries.forEach(query => {
+                queriesHtml += `<div>Query ${query.step}: Message="${query.message}" → Tag="${query.tag.substring(0, 16)}..."</div>`;
+            });
+            
+            oracleQueriesDiv.innerHTML = queriesHtml;
+            
+            // Display chosen messages and their parts
+            const chosen = result.attack_steps.chosen_messages;
+            document.getElementById('message1').textContent = chosen.message1;
+            document.getElementById('tag1').textContent = chosen.tag1.substring(0, 16) + '...';
+            document.getElementById('message2').textContent = chosen.message2;
+            document.getElementById('tag2').textContent = chosen.tag2.substring(0, 16) + '...';
+            
+            // Display message and tag halves
+            document.getElementById('m0a').textContent = chosen.m0a;
+            document.getElementById('m1b').textContent = chosen.m1b;
+            document.getElementById('t0a').textContent = chosen.t0a.substring(0, 8) + '...';
+            document.getElementById('t1b').textContent = chosen.t1b.substring(0, 8) + '...';
+            
+            // Display forged message and tag
+            document.getElementById('forgedMessageDisplay').textContent = result.forged_message;
+            document.getElementById('forgedTagDisplay').textContent = result.forged_tag.substring(0, 16) + '...';
+            
+            // Display verification result
+            const verificationDiv = document.getElementById('verificationResult');
+            if (result.success) {
+                verificationDiv.textContent = '✓ Verification Successful: The forged message and tag were accepted as valid!';
+                verificationDiv.style.color = 'green';
+            } else {
+                verificationDiv.textContent = '✗ Verification Failed: The forged message and tag were rejected.';
+                verificationDiv.style.color = 'red';
+            }
+        }
+        
+        document.getElementById('copyForgedMessageBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(forgedMessageInput.value);
+            setResultText(forgeryResultDiv, 'Forged message copied to clipboard');
+        });
+        
+        document.getElementById('copyForgedTagBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(forgedTagInput.value);
+            setResultText(forgeryResultDiv, 'Forged tag copied to clipboard');
+        });
+        
+        // Dark Mode Toggle
+        document.getElementById('toggleDarkMode').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            
+            if (isDarkMode) {
+                document.documentElement.style.setProperty('--background-color', '#222');
+                document.documentElement.style.setProperty('--text-color', '#eee');
+                document.documentElement.style.setProperty('--section-bg', '#333');
+                document.documentElement.style.setProperty('--border-color', '#555');
+                document.documentElement.style.setProperty('--input-bg', '#444');
+            } else {
+                document.documentElement.style.setProperty('--background-color', '#f0f0f0');
+                document.documentElement.style.setProperty('--text-color', '#333');
+                document.documentElement.style.setProperty('--section-bg', '#f9f9f9');
+                document.documentElement.style.setProperty('--border-color', '#ccc');
+                document.documentElement.style.setProperty('--input-bg', '#fff');
+            }
+        });
+        
+        // CSS Variables for Dark Mode
+        document.documentElement.style.setProperty('--background-color', '#f0f0f0');
+        document.documentElement.style.setProperty('--text-color', '#333');
+        document.documentElement.style.setProperty('--section-bg', '#f9f9f9');
+        document.documentElement.style.setProperty('--border-color', '#ccc');
+        document.documentElement.style.setProperty('--input-bg', '#fff');
+        
+        // Add dark mode styles
+        const darkModeStyles = `
+            body.dark-mode {
+                background-color: var(--background-color);
+                color: var(--text-color);
+            }
+            body.dark-mode .section {
+                background-color: var(--section-bg);
+                border-color: var(--border-color);
+            }
+            body.dark-mode input[type="text"], 
+            body.dark-mode textarea {
+                background-color: var(--input-bg);
+                color: var(--text-color);
+                border-color: var(--border-color);
+            }
+            body.dark-mode button {
+                background-color: var(--input-bg);
+                color: var(--text-color);
+                border-color: var(--border-color);
+            }
+            body.dark-mode .footer {
+                background-color: var(--background-color);
+                border-color: var(--border-color);
+            }
+        `;
+        
+        const styleElement = document.createElement('style');
+        styleElement.textContent = darkModeStyles;
+        document.head.appendChild(styleElement);
+    </script>
+</body>
+</html>
